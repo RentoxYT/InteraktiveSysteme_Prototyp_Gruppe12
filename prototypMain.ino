@@ -9,7 +9,7 @@ int ledPin5 =  6;
 int red = 11;
 int green = 12;
 int blue = 13;
-
+unsigned long startTime = 0;
 CapacitiveSensor   cs_7_8 = CapacitiveSensor(7,8);
 
 enum STATE {
@@ -18,22 +18,23 @@ enum STATE {
 
   USER_INFRONT,
 
-  User_Away,
+  USER_AWAY,
 
   END,
 };
 
 STATE currentState = WAIT_FOR_INPUT;
 
-unsigned long Phase1 = 15000; // milliseconds 
-unsigned long Phase2 = 30000; // milliseconds 
-unsigned long Phase3 = 45000; // milliseconds 
-unsigned long Phase4 = 60000; // milliseconds 
-unsigned long Phase5 = 75000; // milliseconds 
+unsigned long Phase1 = 2000; // milliseconds 
+unsigned long Phase2 = 4000; // milliseconds 
+unsigned long Phase3 = 8000; // milliseconds 
+unsigned long Phase4 = 10000; // milliseconds 
+unsigned long Phase5 = 12000; // milliseconds 
 
 
 void setup()
 {
+   Serial.begin(9600);
    cs_7_8.set_CS_AutocaL_Millis(0xFFFFFFFF); 
   // set the digital pin as output:
   pinMode(ledPin1, OUTPUT);
@@ -54,48 +55,65 @@ void loop()
 
    switch (currentState) { 
       case WAIT_FOR_INPUT:
+          resetLEDs();
           long sensorValue = cs_7_8.capacitiveSensor(30);
           Serial.print("TouchSensor: ");
           Serial.println(sensorValue);
-          if(sensorValue > 0) {
+            long sensorValue = cs_7_8.capacitiveSensor(30);
+
+         if(sensorValue > 0)
+          {
+              startTime = millis();
               currentState = USER_INFRONT;
-              break;
           }
+          break;
+          
           
            
       case USER_INFRONT:
 
           // check to see if it's time to change the state of the LED
-          unsigned long currentMillis = millis();
+          unsigned long elapsed = millis() - startTime;
 
-          if(currentMillis >= Phase1)
+
+          if(elapsed >= Phase1)
           {
           
             digitalWrite(ledPin1, HIGH); // Update the actual LED
           }
-          if(currentMillis >= Phase2)
+          if(elapsed >= Phase2)
           {
             digitalWrite(ledPin2, HIGH); // Update the actual LED
           }
-          if(currentMillis >= Phase3)
+          if(elapsed >= Phase3)
           {
             digitalWrite(ledPin3, HIGH); // Update the actual LED
           }
-          if(currentMillis >= Phase4)
+          if(elapsed >= Phase4)
           {
             digitalWrite(ledPin4, HIGH); // Update the actual LED
           }
-          if(currentMillis >= Phase5)
+          if(elapsed >= Phase5)
           {
             digitalWrite(ledPin5, HIGH); // Update the actual LED
+            currentState = END;
           }
           break;
 
-      case User_Away:
+      case USER_AWAY:
           break;
       case END:
           break;
 
    }
+
+   void resetLEDs()
+{
+    digitalWrite(ledPin1, LOW);
+    digitalWrite(ledPin2, LOW);
+    digitalWrite(ledPin3, LOW);
+    digitalWrite(ledPin4, LOW);
+    digitalWrite(ledPin5, LOW);
+}
  
 }
