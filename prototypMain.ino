@@ -1,3 +1,5 @@
+#include <CapacitiveSensor.h>
+
 int ledPin1 =  2; // the number of the LED pin
 int ledPin2 =  3;
 int ledPin3 =  4;
@@ -7,6 +9,8 @@ int ledPin5 =  6;
 int red = 11;
 int green = 12;
 int blue = 13;
+
+CapacitiveSensor   cs_7_8 = CapacitiveSensor(7,8);
 
 enum STATE {
   
@@ -26,8 +30,15 @@ unsigned long Phase2 = 30000; // milliseconds
 unsigned long Phase3 = 45000; // milliseconds 
 unsigned long Phase4 = 60000; // milliseconds 
 unsigned long Phase5 = 75000; // milliseconds 
+
+// Höherer Wert = unempfindlicher (festerer Druck)
+// Niedrigerer Wert = empfindlicher (nähern reicht schon)
+int threshold = 50; 
+
+
 void setup()
 {
+   cs_7_8.set_CS_AutocaL_Millis(0xFFFFFFFF); 
   // set the digital pin as output:
   pinMode(ledPin1, OUTPUT);
   pinMode(ledPin2, OUTPUT);
@@ -43,9 +54,23 @@ void setup()
 
 void loop()
 {
+
+
    switch (currentState) { 
       case Wait_For_Input:
-          break;
+          long sensorValue = cs_7_8.capacitiveSensor(30);
+            // 1. WARTEN: Das Programm bleibt hier hängen, bis der Wert überschritten wird
+          while (sensorValue < threshold) {
+            // Aktualisiere den Messwert in der Schleife, um auf das Loslassen später vorbereitet zu sein
+            sensorValue = cs_7_8.capacitiveSensor(30);
+            
+            // Kurzes Delay für die Stabilität
+            delay(2); 
+          }
+
+           Serial.println("Berührung erkannt!");
+           currentState = User_Infront;
+           break;
       case User_Infront:
 
           // check to see if it's time to change the state of the LED
