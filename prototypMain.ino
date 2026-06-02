@@ -14,26 +14,22 @@ CapacitiveSensor   cs_7_8 = CapacitiveSensor(7,8);
 
 enum STATE {
   
-  Wait_For_Input,
+  WAIT_FOR_INPUT,
 
-  User_Infront,
+  USER_INFRONT,
 
   User_Away,
 
-  End,
+  END,
 };
 
-STATE currentState = Wait_For_Input;
+STATE currentState = WAIT_FOR_INPUT;
 
 unsigned long Phase1 = 15000; // milliseconds 
 unsigned long Phase2 = 30000; // milliseconds 
 unsigned long Phase3 = 45000; // milliseconds 
 unsigned long Phase4 = 60000; // milliseconds 
 unsigned long Phase5 = 75000; // milliseconds 
-
-// Höherer Wert = unempfindlicher (festerer Druck)
-// Niedrigerer Wert = empfindlicher (nähern reicht schon)
-int threshold = 50; 
 
 
 void setup()
@@ -57,21 +53,17 @@ void loop()
 
 
    switch (currentState) { 
-      case Wait_For_Input:
+      case WAIT_FOR_INPUT:
           long sensorValue = cs_7_8.capacitiveSensor(30);
-            // 1. WARTEN: Das Programm bleibt hier hängen, bis der Wert überschritten wird
-          while (sensorValue < threshold) {
-            // Aktualisiere den Messwert in der Schleife, um auf das Loslassen später vorbereitet zu sein
-            sensorValue = cs_7_8.capacitiveSensor(30);
-            
-            // Kurzes Delay für die Stabilität
-            delay(2); 
+          Serial.print("TouchSensor: ");
+          Serial.println(sensorValue);
+          if(sensorValue > 0) {
+              currentState = USER_INFRONT;
+              break;
           }
-
-           Serial.println("Berührung erkannt!");
-           currentState = User_Infront;
-           break;
-      case User_Infront:
+          
+           
+      case USER_INFRONT:
 
           // check to see if it's time to change the state of the LED
           unsigned long currentMillis = millis();
@@ -101,7 +93,7 @@ void loop()
 
       case User_Away:
           break;
-      case End:
+      case END:
           break;
 
    }
