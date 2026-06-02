@@ -59,7 +59,6 @@ void loop()
           long sensorValue = cs_7_8.capacitiveSensor(30);
           Serial.print("TouchSensor: ");
           Serial.println(sensorValue);
-            long sensorValue = cs_7_8.capacitiveSensor(30);
 
          if(sensorValue > 0)
           {
@@ -107,6 +106,10 @@ void loop()
 
    }
 
+
+ 
+}
+
    void resetLEDs()
 {
     digitalWrite(ledPin1, LOW);
@@ -114,6 +117,4 @@ void loop()
     digitalWrite(ledPin3, LOW);
     digitalWrite(ledPin4, LOW);
     digitalWrite(ledPin5, LOW);
-}
- 
 }
