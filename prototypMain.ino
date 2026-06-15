@@ -1,46 +1,39 @@
 #include <Servo.h>
 #include <CuteBuzzerSounds.h>
-// -------------------------
-// LED-Pins
-// -------------------------
+
+// LEDs
 const int ledPin1 = 2;
 const int ledPin2 = 3;
 const int ledPin3 = 4;
 const int ledPin4 = 5;
 const int ledPin5 = 6;
 
-// -------------------------
-// Ultraschallsensor
-// -------------------------
+// Ultraschall
 #define PIN_TRIGGER 7
-#define PIN_ECHO 8
+#define PIN_ECHO     8
+
+// Sonstiges
 #define BUZZER_PIN 12
-const int SENSOR_MAX_RANGE = 300; // cm
+#define BUTTON_PIN 13
 
-unsigned long durationTime = 0;
-unsigned int distance = SENSOR_MAX_RANGE + 1;
+const int SENSOR_MAX_RANGE = 300;
 
-// -------------------------
 // Servos
-// -------------------------
 Servo ServomotorRed;
 Servo ServomotorGreen;
 
-// -------------------------
 // Zustände
-// -------------------------
 enum STATE
 {
     WAIT_FOR_INPUT,
     USER_INFRONT,
-    USER_AWAY
+    USER_AWAY,
+    FINAL
 };
 
 STATE currentState = WAIT_FOR_INPUT;
 
-// -------------------------
-// Zeitpunkte (ms)
-// -------------------------
+// Zeitsteuerung
 const unsigned long Phase1 = 2000;
 const unsigned long Phase2 = 4000;
 const unsigned long Phase3 = 6000;
@@ -48,11 +41,13 @@ const unsigned long Phase4 = 8000;
 const unsigned long Phase5 = 10000;
 
 unsigned long startTime = 0;
-unsigned long awayStartTime = 0;
+unsigned long lastMeasure = 0;
 
+unsigned long durationTime = 0;
+unsigned int distance = SENSOR_MAX_RANGE + 1;
 
-bool servoPos = false;
-unsigned long servoTimer = 0;
+int awayCounter = 0;
+
 // ======================================================
 
 void setup()
@@ -70,7 +65,7 @@ void setup()
     pinMode(ledPin3, OUTPUT);
     pinMode(ledPin4, OUTPUT);
     pinMode(ledPin5, OUTPUT);
-
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
     resetLEDs();
 
     digitalWrite(PIN_TRIGGER, LOW);
@@ -80,6 +75,11 @@ void setup()
 
 void loop()
 {
+     if (millis() - lastMeasure >= 50)
+    {
+        lastMeasure = millis();
+        measureDistance();
+    }
     switch (currentState)
     {
 
@@ -90,88 +90,81 @@ void loop()
 
         resetLEDs();
 
-        measureDistance();
 
-        // Hier ggf. Grenzwert anpassen (z.B. 50 cm)
-        if (distance < 300)
-        {
-            Serial.println("Benutzer erkannt.");
-
-            startTime = millis();
-
-            currentState = USER_INFRONT;
-        }
+    if (digitalRead(BUTTON_PIN) == LOW && distance < 100) // z.B. unter 100 cm
+    {
+        Serial.println("Benutzer erkannt.");
+        startTime = millis();
+        currentState = USER_INFRONT;
+    }
 
         break;
 
     // -------------------------
     // Benutzer steht davor
     // -------------------------
-    case USER_INFRONT:
+   case USER_INFRONT:
+
+    if (distance >= 300)
     {
+        awayCounter++;
 
-        measureDistance();
-
-        if (distance >= 300)
+        if (awayCounter >= 10)
         {
             Serial.println("Benutzer weg.");
-             awayStartTime = millis();
+            cute.play(S_SAD);
+            awayCounter = 0;
             currentState = USER_AWAY;
-        
-
-            break;
         }
-
-        unsigned long elapsed = millis() - startTime;
-
-        if (elapsed >= Phase1)
-            digitalWrite(ledPin1, HIGH);
-
-        if (elapsed >= Phase2)
-            digitalWrite(ledPin2, HIGH);
-
-        if (elapsed >= Phase3)
-            digitalWrite(ledPin3, HIGH);
-
-        if (elapsed >= Phase4)
-            digitalWrite(ledPin4, HIGH);
-
-        if (elapsed >= Phase5) {
-            digitalWrite(ledPin5, HIGH);
-            cute.play(S_HAPPY);
-            delay(2000);
-            ServomotorGreen.write(170);  // oben
-            delay(2000);
-            ServomotorGreen.write(10);
-
-        }
-            
-        break;
     }
+    else
+    {
+        awayCounter = 0;
+    }
+
+    unsigned long elapsed = millis() - startTime;
+
+    if (elapsed >= Phase1) digitalWrite(ledPin1, HIGH);
+    if (elapsed >= Phase2) digitalWrite(ledPin2, HIGH);
+    if (elapsed >= Phase3) digitalWrite(ledPin3, HIGH);
+    if (elapsed >= Phase4) digitalWrite(ledPin4, HIGH);
+
+    if (elapsed >= Phase5)
+    {
+        digitalWrite(ledPin5, HIGH);
+        cute.play(S_HAPPY);
+        currentState = FINAL;
+    }
+
+    break;
+    
 
     // -------------------------
     // Benutzer hat den Bereich verlassen
     // -------------------------
-    case USER_AWAY:
+case USER_AWAY:
 
     resetLEDs();
 
-    if (millis() - servoTimer >= 2000)
+    if (distance < 300)
     {
-        servoTimer = millis();
-        cute.play(S_SAD);
-        delay(2000);
-        servoPos = !servoPos;
-
-        if (servoPos)
-            ServomotorRed.write(170);
-        else
-            ServomotorRed.write(10);
+        startTime = millis();
+        currentState = USER_INFRONT;
     }
 
-    if (millis() - awayStartTime >= 10000)
+    break;
+    
+case FINAL:
+
+    digitalWrite(ledPin1, HIGH);
+    digitalWrite(ledPin2, HIGH);
+    digitalWrite(ledPin3, HIGH);
+    digitalWrite(ledPin4, HIGH);
+    digitalWrite(ledPin5, HIGH);
+
+    if (digitalRead(BUTTON_PIN) == LOW)
     {
-        ServomotorRed.write(10);   // Servo am Ende unten lassen
+        resetLEDs();
         currentState = WAIT_FOR_INPUT;
     }
 
@@ -208,9 +201,9 @@ void measureDistance()
     Serial.print("Distance to object: ");
     Serial.print(distance);
     Serial.println(" cm");
-
+    Serial.println(currentState);
     // HC-SR04 braucht etwas Zeit bis zur nächsten Messung
-    delay(600);
+    
 }
 
 // ======================================================
@@ -225,3 +218,4 @@ void resetLEDs()
     digitalWrite(ledPin4, LOW);
     digitalWrite(ledPin5, LOW);
 }
+
