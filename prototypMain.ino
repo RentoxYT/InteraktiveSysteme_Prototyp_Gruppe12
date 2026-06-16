@@ -17,6 +17,7 @@ const int ledPin5 = 6;
 #define BUTTON_PIN 13
 
 const int SENSOR_MAX_RANGE = 300;
+unsigned long awayStart = 0;
 
 // Servos
 Servo ServomotorRed;
@@ -87,7 +88,7 @@ void loop()
     // Warten bis jemand kommt
     // -------------------------
     case WAIT_FOR_INPUT:
-
+{
         resetLEDs();
 
 
@@ -99,27 +100,31 @@ void loop()
     }
 
         break;
-
+}
     // -------------------------
     // Benutzer steht davor
     // -------------------------
    case USER_INFRONT:
-
+{
     if (distance >= 300)
     {
-        awayCounter++;
+        if (awayStart == 0)
+        {
+            awayStart = millis(); // Zeitpunkt merken
+        }
 
-        if (awayCounter >= 10)
+        if (millis() - awayStart >= 2000) // 2 Sekunden weg
         {
             Serial.println("Benutzer weg.");
             cute.play(S_SAD);
-            awayCounter = 0;
+            awayStart = 0;
             currentState = USER_AWAY;
         }
     }
     else
     {
-        awayCounter = 0;
+        // Benutzer wieder da
+        awayStart = 0;
     }
 
     unsigned long elapsed = millis() - startTime;
@@ -132,18 +137,22 @@ void loop()
     if (elapsed >= Phase5)
     {
         digitalWrite(ledPin5, HIGH);
-        cute.play(S_HAPPY);
+        //cute.play(S_HAPPY);
+        Serial.println("Test Vor Final");
         currentState = FINAL;
+        Serial.println(currentState);
+        Serial.println("Test Nach Final");
+        break;
     }
 
     break;
-    
+}
 
     // -------------------------
     // Benutzer hat den Bereich verlassen
     // -------------------------
 case USER_AWAY:
-
+{
     resetLEDs();
 
     if (distance < 300)
@@ -153,9 +162,10 @@ case USER_AWAY:
     }
 
     break;
-    
+}  
 case FINAL:
-
+{
+    
     digitalWrite(ledPin1, HIGH);
     digitalWrite(ledPin2, HIGH);
     digitalWrite(ledPin3, HIGH);
@@ -164,12 +174,19 @@ case FINAL:
 
     if (digitalRead(BUTTON_PIN) == LOW)
     {
+        while(digitalRead(BUTTON_PIN) == LOW) {
+          delay(10);
+        }
+
         resetLEDs();
+        awayStart = 0;
+        startTime = 0;
         currentState = WAIT_FOR_INPUT;
     }
 
     break;
 }
+    }
 }
 
 // ======================================================
@@ -198,11 +215,11 @@ void measureDistance()
         distance = durationTime / 58;
     }
 
-    Serial.print("Distance to object: ");
+ /*   Serial.print("Distance to object: ");
     Serial.print(distance);
     Serial.println(" cm");
-    Serial.println(currentState);
-    // HC-SR04 braucht etwas Zeit bis zur nächsten Messung
+    Serial.println(currentState); */
+   
     
 }
 
@@ -218,4 +235,3 @@ void resetLEDs()
     digitalWrite(ledPin4, LOW);
     digitalWrite(ledPin5, LOW);
 }
-
