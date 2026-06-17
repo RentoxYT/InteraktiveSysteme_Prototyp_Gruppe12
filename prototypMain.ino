@@ -119,7 +119,7 @@ void loop()
    case USER_INFRONT:
 {
     
-    if (distance >= 300)
+    if (distance >= 100)
     {
         if (awayStart == 0)
         {
@@ -145,14 +145,14 @@ void loop()
 
     unsigned long elapsed = millis() - startTime;
 
-    if (elapsed >= Phase1) digitalWrite(ledPin1, HIGH);
-    if (elapsed >= Phase2) digitalWrite(ledPin2, HIGH);
+    if (elapsed >= Phase1) digitalWrite(ledPin5, HIGH);
+    if (elapsed >= Phase2) digitalWrite(ledPin4, HIGH);
     if (elapsed >= Phase3) digitalWrite(ledPin3, HIGH);
-    if (elapsed >= Phase4) digitalWrite(ledPin4, HIGH);
+    if (elapsed >= Phase4) digitalWrite(ledPin2, HIGH);
 
     if (elapsed >= Phase5)
     {
-        digitalWrite(ledPin5, HIGH);
+        digitalWrite(ledPin1, HIGH);
         cute.play(S_HAPPY);
         Serial.println("Test Vor Final");
         currentState = FINAL;
@@ -175,7 +175,7 @@ case USER_AWAY:
       analogWrite(LEDgruen, 0); // gruen einschalten
      analogWrite(LEDrot, Helligkeit); //Rot aus
 
-    if (distance < 300)
+    if (distance < 100)
     {
         if (returnStart == 0)
         {
@@ -283,4 +283,3 @@ void resetLEDs()
      analogWrite(LEDrot, 0); //Rot aus
 
 }
-
